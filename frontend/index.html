@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+  <title>Task Manager 🚀</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 40px;
+      width: 100%;
+      max-width: 500px;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 25px;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 12px 15px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    button {
+      padding: 12px 25px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #764ba2;
+    }
+    #taskList {
+      list-style: none;
+    }
+    .task-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border-left: 4px solid #667eea;
+      animation: slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    .task-item.completed {
+      background: #e8f5e9;
+      opacity: 0.7;
+    }
+    .task-item.completed .task-text {
+      text-decoration: line-through;
+      color: #999;
+    }
+    .task-text {
+      flex: 1;
+      cursor: pointer;
+      font-size: 16px;
+      color: #333;
+    }
+    .task-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-delete, .btn-toggle {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+    .btn-toggle {
+      background: #4CAF50;
+      color: white;
+    }
+    .btn-toggle:hover {
+      background: #45a049;
+    }
+    .btn-delete {
+      background: #f44336;
+      color: white;
+    }
+    .btn-delete:hover {
+      background: #da190b;
+    }
+    .stats {
+      text-align: center;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 2px solid #eee;
+      color: #666;
+      font-size: 14px;
+    }
+    .empty-state {
+      text-align: center;
+      color: #999;
+      padding: 40px 20px;
+      font-style: italic;
+    }
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>📝 Task Manager</h1>
+  
+  <div class="error" id="errorMsg"></div>
+  
+  <div class="input-group">
+    <input 
+      type="text" 
+      id="taskInput" 
+      placeholder="Enter a new task..."
+      onkeypress="if(event.key==='Enter') addTask()"
+    >
+    <button onclick="addTask()">➕ Add</button>
+  </div>
+
+  <ul id="taskList"></ul>
+  
+  <div class="empty-state" id="emptyState" style="display: none;">
+    No tasks yet. Add one to get started! 🎯
+  </div>
+
+  <div class="stats">
+    <span id="taskCount">0 tasks</span>
+  </div>
+</div>
+
+<script>
+  const API = "http://localhost:30007";
+  const taskInput = document.getElementById('taskInput');
+  const taskList = document.getElementById('taskList');
+  const errorMsg = document.getElementById('errorMsg');
+  const emptyState = document.getElementById('emptyState');
+  const taskCount = document.getElementById('taskCount');
+
+  // Load tasks on page load
+  window.onload = () => {
+    console.log('🚀 Task Manager loaded. Fetching tasks...');
+    loadTasks();
+    setInterval(loadTasks, 2000); // Auto-refresh every 2 seconds
+  };
+
+  function loadTasks() {
+    fetch(API + '/tasks')
+      .then(res => res.json())
+      .then(data => {
+        console.log('📊 Loaded', data.length, 'tasks');
+        taskList.innerHTML = '';
+        
+        if (data.length === 0) {
+          emptyState.style.display = 'block';
+          taskCount.textContent = '0 tasks';
+        } else {
+          emptyState.style.display = 'none';
+          data.forEach(task => {
+            const li = document.createElement('li');
+            li.className = 'task-item' + (task.completed ? ' completed' : '');
+            li.innerHTML = `
+              <span class="task-text" onclick="toggleTask(${task.id})">${task.text}</span>
+              <div class="task-buttons">
+                <button class="btn-toggle" onclick="toggleTask(${task.id})">✓</button>
+                <button class="btn-delete" onclick="deleteTask(${task.id})">✕</button>
+              </div>
+            `;
+            taskList.appendChild(li);
+          });
+          taskCount.textContent = data.length + ' task' + (data.length !== 1 ? 's' : '');
+        }
+        errorMsg.style.display = 'none';
+      })
+      .catch(err => {
+        console.error('❌ Error loading tasks:', err);
+        errorMsg.textContent = '⚠️ Cannot connect to backend: ' + err.message;
+        errorMsg.style.display = 'block';
+      });
+  }
+
+  function addTask() {
+    const text = taskInput.value.trim();
+    if (!text) {
+      errorMsg.textContent = '⚠️ Please enter a task';
+      errorMsg.style.display = 'block';
+      return;
+    }
+    
+    console.log('✍️ Adding task:', text);
+    fetch(API + '/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    })
+    .then(res => res.json())
+    .then(task => {
+      console.log('✅ Task added:', task);
+      taskInput.value = '';
+      loadTasks();
+    })
+    .catch(err => {
+      console.error('❌ Error adding task:', err);
+      errorMsg.textContent = '⚠️ Failed to add task';
+      errorMsg.style.display = 'block';
+    });
+  }
+
+  function toggleTask(id) {
+    console.log('🔄 Toggling task:', id);
+    fetch(API + '/tasks/' + id, { method: 'PUT' })
+      .then(res => res.json())
+      .then(() => loadTasks())
+      .catch(err => {
+        console.error('❌ Error toggling task:', err);
+        errorMsg.textContent = '⚠️ Failed to update task';
+        errorMsg.style.display = 'block';
+      });
+  }
+
+  function deleteTask(id) {
+    if (confirm('Delete this task?')) {
+      console.log('🗑️ Deleting task:', id);
+      fetch(API + '/tasks/' + id, { method: 'DELETE' })
+        .then(res => res.json())
+        .then(() => {
+          console.log('✅ Task deleted');
+          loadTasks();
+        })
+        .catch(err => {
+          console.error('❌ Error deleting task:', err);
+          errorMsg.textContent = '⚠️ Failed to delete task';
+          errorMsg.style.display = 'block';
+        });
+    }
+  }
+
+  // Log when backend is reachable
+  fetch(API + '/health')
+    .then(res => res.json())
+    .then(data => console.log('✅ Backend connected:', data))
+    .catch(() => console.log('⚠️ Backend not yet available'));
+</script>
+
+</body>
+</html>

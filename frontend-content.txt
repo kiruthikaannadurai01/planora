@@ -1,0 +1,24 @@
+﻿<!DOCTYPE html>
+<html>
+<body>
+
+<h1>ð Frontend Service</h1>
+
+<p id="response">Loading...</p>
+
+<script>
+// Use Backend NodePort (30007) - accessible from browser on host
+fetch("http://localhost:30007")
+  .then(res => res.text())
+  .then(data => {
+    document.getElementById("response").innerText = data;
+  })
+  .catch(err => {
+    document.getElementById("response").innerText =
+      "Error connecting to backend: " + err;
+  });
+</script>
+
+</body>
+</html>
+
