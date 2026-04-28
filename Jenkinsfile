@@ -7,36 +7,46 @@ pipeline {
 
     stages {
 
-        stage('Clone Code') {
+        stage('Clone') {
             steps {
                 git 'https://github.com/kiruthikaannadurai01/planora.git'
+            }
+        }
+
+        stage('Docker Test') {
+            steps {
+                sh 'docker ps'
             }
         }
 
         stage('Docker Login') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    sh "echo $PASS | docker login -u $USER --password-stdin"
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
                 }
             }
         }
 
         stage('Build Backend') {
             steps {
-                sh "docker buildx create --use || true"
-                sh "docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_USER/backend:latest --push ./backend"
+                sh '''
+                docker buildx create --use || true
+                docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_USER/backend:latest --push ./backend
+                '''
             }
         }
 
         stage('Build Frontend') {
             steps {
-                sh "docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_USER/frontend:latest --push ./frontend"
+                sh '''
+                docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_USER/frontend:latest --push ./frontend
+                '''
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Deploy Kubernetes') {
             steps {
-                sh "kubectl apply -f k8s/"
+                sh 'kubectl apply -f k8s/'
             }
         }
     }
