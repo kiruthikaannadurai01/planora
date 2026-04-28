@@ -7,12 +7,6 @@ pipeline {
 
     stages {
 
-        stage('Clone') {
-            steps {
-                git 'https://github.com/kiruthikaannadurai01/planora.git'
-            }
-        }
-
         stage('Docker Test') {
             steps {
                 sh 'docker ps'
